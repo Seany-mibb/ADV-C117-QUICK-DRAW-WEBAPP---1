@@ -6,6 +6,11 @@ drawn_sketch = '';
 answer_holder = '';
 score = 0;
 
+function preload()
+{
+    classifier = ml5.imageClassifier('DoodleNet');
+}
+
 function setup()
 {
     canvas = createCanvas(500,390)
@@ -13,21 +18,40 @@ function setup()
     background("white");
     interval();
     prompts();
+    canvas.mouseReleased(classifyCanvas);
+    synth = window.speechSynthesis;
 }
 
 function draw()
 {
+
+    strokeWeight(10);
+    stroke(0);
+    if(mouseIsPressed)
+    {
+        line(pmouseX, pmouseY, mouseX, mouseY)
+    }
+
     timer = document.getElementById("time").innerHTML = "Timer: " + timerCounter;
 
     if(timerCounter === 0)
     {
         prompts();
-        interval();
+        document.getElementById("go").innerHTML = "Wait...";
+        setTimeout(()=>{
+            setInterval(()=>{
+                document.getElementById("go").innerHTML = "GO!";
+            }, 1000)
+        },5000)
         timerCounter = 20;
-        console.log(timerCounter)
+        console.log(timerCounter);
+        clearCanvas();
     }
+}
 
-    
+function classifyCanvas()
+{
+    classifier.classify(canvas, gotResult);
 }
 
 function interval()
@@ -52,4 +76,18 @@ function prompts()
     console.log(element_of_array);
     
     prompt = document.getElementById("drawn_sketch").innerHTML = "Sketch To Be Drawn: " + element_of_array;
+}
+
+function gotResult(error, results)
+{
+    if(error)
+    {
+        console.log(error)
+    }
+    document.getElementById("label").innerHTML = "Label: " + results[0].label;
+
+    document.getElementById("confidence").innerHTML = "Confidence: " + Math.round(results[0].confidence * 100) + "%"
+
+    utterThis = new SpeechSynthesisUtterance(results[0].label); // Convert text to a form that can be spoken and store it in utterThis variable
+    synth.speak(utterThis);
 }
